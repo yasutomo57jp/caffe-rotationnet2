@@ -597,6 +597,12 @@ V1LayerParameter_LayerType UpgradeV0LayerType(const string& type) {
     return V1LayerParameter_LayerType_TANH;
   } else if (type == "window_data") {
     return V1LayerParameter_LayerType_WINDOW_DATA;
+  } else if (type == "my_softmax") {
+    return V1LayerParameter_LayerType_MY_SOFTMAX;
+  } else if (type == "my_softmax_loss") {
+    return V1LayerParameter_LayerType_MY_SOFTMAX_LOSS;
+  } else if (type == "my_accuracy") {
+    return V1LayerParameter_LayerType_MY_ACCURACY;
   } else {
     LOG(FATAL) << "Unknown layer name: " << type;
     return V1LayerParameter_LayerType_NONE;
@@ -748,6 +754,10 @@ bool UpgradeV1LayerParameter(const V1LayerParameter& v1_layer_param,
     layer_param->mutable_accuracy_param()->CopyFrom(
         v1_layer_param.accuracy_param());
   }
+  if (v1_layer_param.has_my_accuracy_param()) {
+    layer_param->mutable_my_accuracy_param()->CopyFrom(
+        v1_layer_param.my_accuracy_param());
+  }
   if (v1_layer_param.has_argmax_param()) {
     layer_param->mutable_argmax_param()->CopyFrom(
         v1_layer_param.argmax_param());
@@ -839,6 +849,14 @@ bool UpgradeV1LayerParameter(const V1LayerParameter& v1_layer_param,
   if (v1_layer_param.has_softmax_param()) {
     layer_param->mutable_softmax_param()->CopyFrom(
         v1_layer_param.softmax_param());
+  }
+  if (v1_layer_param.has_my_softmax_param()) {
+    layer_param->mutable_my_softmax_param()->CopyFrom(
+        v1_layer_param.my_softmax_param());
+  }
+  if (v1_layer_param.has_my_softmax_loss_param()) {
+    layer_param->mutable_my_softmax_loss_param()->CopyFrom(
+        v1_layer_param.my_softmax_loss_param());
   }
   if (v1_layer_param.has_slice_param()) {
     layer_param->mutable_slice_param()->CopyFrom(
@@ -953,6 +971,12 @@ const char* UpgradeV1LayerType(const V1LayerParameter_LayerType type) {
     return "WindowData";
   case V1LayerParameter_LayerType_THRESHOLD:
     return "Threshold";
+  case V1LayerParameter_LayerType_MY_SOFTMAX:
+    return "MySoftmax";
+  case V1LayerParameter_LayerType_MY_SOFTMAX_LOSS:
+    return "MySoftmaxWithLoss";
+  case V1LayerParameter_LayerType_MY_ACCURACY:
+    return "MyAccuracy";
   default:
     LOG(FATAL) << "Unknown V1LayerParameter layer type: " << type;
     return "";

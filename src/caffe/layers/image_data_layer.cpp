@@ -29,6 +29,7 @@ void ImageDataLayer<Dtype>::DataLayerSetUp(const vector<Blob<Dtype>*>& bottom,
   const int new_width  = this->layer_param_.image_data_param().new_width();
   const bool is_color  = this->layer_param_.image_data_param().is_color();
   string root_folder = this->layer_param_.image_data_param().root_folder();
+  nRotation_ = this->layer_param_.image_data_param().num_rotation();
 
   CHECK((new_height == 0 && new_width == 0) ||
       (new_height > 0 && new_width > 0)) << "Current implementation requires "
@@ -95,9 +96,19 @@ void ImageDataLayer<Dtype>::DataLayerSetUp(const vector<Blob<Dtype>*>& bottom,
 
 template <typename Dtype>
 void ImageDataLayer<Dtype>::ShuffleImages() {
-  caffe::rng_t* prefetch_rng =
-      static_cast<caffe::rng_t*>(prefetch_rng_->generator());
-  shuffle(lines_.begin(), lines_.end(), prefetch_rng);
+  // caffe::rng_t* prefetch_rng =
+  //     static_cast<caffe::rng_t*>(prefetch_rng_->generator());
+  // shuffle(lines_.begin(), lines_.end(), prefetch_rng);
+  const int num_images = lines_.size() / nRotation_;
+  for (int i = 0; i < num_images; ++i) {
+    const int max_rand_index = num_images - i;
+    const int rand_index = PrefetchRand() % max_rand_index;
+    for (int j = 0; j < nRotation_; ++j) {
+      pair<string, int> item = lines_[rand_index * nRotation_];
+      lines_.erase(lines_.begin() + rand_index * nRotation_);
+      lines_.push_back(item);
+    }
+  }
 }
 
 // This function is called on prefetch thread
@@ -165,6 +176,13 @@ void ImageDataLayer<Dtype>::load_batch(Batch<Dtype>* batch) {
   DLOG(INFO) << "Prefetch batch: " << batch_timer.MilliSeconds() << " ms.";
   DLOG(INFO) << "     Read time: " << read_time / 1000 << " ms.";
   DLOG(INFO) << "Transform time: " << trans_time / 1000 << " ms.";
+}
+
+template <typename Dtype>
+unsigned int ImageDataLayer<Dtype>::PrefetchRand() {
+  caffe::rng_t* prefetch_rng =
+      static_cast<caffe::rng_t*>(prefetch_rng_->generator());
+  return (*prefetch_rng)();
 }
 
 INSTANTIATE_CLASS(ImageDataLayer);

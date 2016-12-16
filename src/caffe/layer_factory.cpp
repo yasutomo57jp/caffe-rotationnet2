@@ -13,6 +13,8 @@
 #include "caffe/layers/relu_layer.hpp"
 #include "caffe/layers/sigmoid_layer.hpp"
 #include "caffe/layers/softmax_layer.hpp"
+#include "caffe/layers/my_softmax_layer.hpp"
+#include "caffe/layers/my_softmax_loss_layer.hpp"
 #include "caffe/layers/tanh_layer.hpp"
 #include "caffe/proto/caffe.pb.h"
 
@@ -220,6 +222,38 @@ shared_ptr<Layer<Dtype> > GetSoftmaxLayer(const LayerParameter& param) {
 }
 
 REGISTER_LAYER_CREATOR(Softmax, GetSoftmaxLayer);
+
+// Get mysoftmax layer according to engine.
+template <typename Dtype>
+shared_ptr<Layer<Dtype> > GetMySoftmaxLayer(const LayerParameter& param) {
+  MySoftmaxParameter_Engine engine = param.my_softmax_param().engine();
+  if (engine == MySoftmaxParameter_Engine_DEFAULT) {
+    engine = MySoftmaxParameter_Engine_CAFFE;
+// #ifdef USE_CUDNN
+//     engine = MySoftmaxParameter_Engine_CUDNN;
+// #endif
+  }
+  if (engine == MySoftmaxParameter_Engine_CAFFE) {
+    return shared_ptr<Layer<Dtype> >(new MySoftmaxLayer<Dtype>(param));
+// #ifdef USE_CUDNN
+//   } else if (engine == MySoftmaxParameter_Engine_CUDNN) {
+//     return shared_ptr<Layer<Dtype> >(new CuDNNMySoftmaxLayer<Dtype>(param));
+// #endif
+  } else {
+    LOG(FATAL) << "Layer " << param.name() << " has unknown engine.";
+    throw;  // Avoids missing return warning
+  }
+}
+
+REGISTER_LAYER_CREATOR(MySoftmax, GetMySoftmaxLayer);
+
+// Get mysoftmaxloss layer according to engine.
+template <typename Dtype>
+shared_ptr<Layer<Dtype> > GetMySoftmaxWithLossLayer(const LayerParameter& param) {
+    return shared_ptr<Layer<Dtype> >(new MySoftmaxWithLossLayer<Dtype>(param));
+}
+
+REGISTER_LAYER_CREATOR(MySoftmaxLoss, GetMySoftmaxWithLossLayer);
 
 // Get tanh layer according to engine.
 template <typename Dtype>
